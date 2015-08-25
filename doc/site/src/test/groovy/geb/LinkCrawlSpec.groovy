@@ -18,7 +18,7 @@ package geb
 import geb.crawl.Crawler
 import geb.crawl.PrettyPrintCollection
 import groovy.util.logging.Slf4j
-import ratpack.groovy.test.LocalScriptApplicationUnderTest
+import ratpack.groovy.test.GroovyRatpackMainApplicationUnderTest
 import spock.lang.Specification
 
 @Slf4j
@@ -26,7 +26,7 @@ class LinkCrawlSpec extends Specification {
 
     def "site has no bad links"() {
         given:
-        def aut = new LocalScriptApplicationUnderTest()
+        def aut = new GroovyRatpackMainApplicationUnderTest()
 
         def allowBroken = []
 
@@ -34,7 +34,7 @@ class LinkCrawlSpec extends Specification {
             boolean shouldUseHeadRequest(Link url) {
                 def usingHead = !(url.uri.host in ["drone.io", "blog.proxerd.pl", "search.maven.org"]) && super.shouldUseHeadRequest(url)
                 if (!usingHead) {
-                    println "not using head for" + url
+                    println "not using head for " + url
                 }
                 usingHead
             }
@@ -58,16 +58,6 @@ class LinkCrawlSpec extends Specification {
             List<String> findPageLinks(Response response) {
                 def document = response.document
                 document == null ? [] : document.select("body a")*.attr("href").findAll { it }
-            }
-
-            @Override
-            void addPageErrors(Link link, Response response) {
-                if (isCrawlable(link)) {
-                    response.document?.text()?.findAll(~$/\[.+]\(.+\)/$)?.each {
-                        link.errors << new BadMarkdownLinkSyntax(it)
-                    }
-                }
-                super.addPageErrors(link, response)
             }
         }
 

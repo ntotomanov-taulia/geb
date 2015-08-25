@@ -74,15 +74,15 @@ class Configuration {
         def timeout = readValue(preset, 'timeout', getDefaultWaitTimeout())
         def retryInterval = readValue(preset, 'retryInterval', getDefaultWaitRetryInterval())
 
-        new Wait(timeout, retryInterval)
+        new Wait(timeout, retryInterval, getIncludeCauseInWaitTimeoutExceptionMessage())
     }
 
     Wait getDefaultWait() {
-        new Wait(getDefaultWaitTimeout(), getDefaultWaitRetryInterval())
+        new Wait(getDefaultWaitTimeout(), getDefaultWaitRetryInterval(), getIncludeCauseInWaitTimeoutExceptionMessage())
     }
 
     Wait getWait(Double timeout) {
-        new Wait(timeout, getDefaultWaitRetryInterval())
+        new Wait(timeout, getDefaultWaitRetryInterval(), getIncludeCauseInWaitTimeoutExceptionMessage())
     }
 
     Wait getWaitForParam(waitingParam) {
@@ -98,7 +98,7 @@ class Configuration {
                 def retryInterval = waitingParam[1]
 
                 if (timeout instanceof Number && retryInterval instanceof Number) {
-                    new Wait(timeout.doubleValue(), retryInterval.doubleValue())
+                    new Wait(timeout.doubleValue(), retryInterval.doubleValue(), getIncludeCauseInWaitTimeoutExceptionMessage())
                 } else {
                     throw new IllegalArgumentException("'wait' param has illegal value '$waitingParam' (collection elements must be numbers)")
                 }
@@ -126,6 +126,24 @@ class Configuration {
      */
     Double getDefaultWaitTimeout() {
         readValue(rawConfig.waiting, 'timeout', Wait.DEFAULT_TIMEOUT)
+    }
+
+    /**
+     * Returns Either the value at config path {@code waiting.includeCauseInMessage} or {false} if there is none.
+     * <p>
+     * Determines if the message of {@link geb.waiting.WaitTimeoutException} should contain a string representation of its cause.
+     */
+    boolean getIncludeCauseInWaitTimeoutExceptionMessage() {
+        readValue(rawConfig.waiting, 'includeCauseInMessage', false)
+    }
+
+    /**
+     * Updates the {@code waiting.includeCauseInMessage} config entry.
+     *
+     * @see #getIncludeCauseInWaitTimeoutExceptionMessage()
+     */
+    void setIncludeCauseInWaitTimeoutExceptionMessage(boolean include) {
+        rawConfig.waiting.includeCauseInMessage = include
     }
 
     /**

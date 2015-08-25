@@ -6,11 +6,12 @@ include "module:geb-core",
     "module:geb-implicit-assertions",
     "module:geb-ast",
     "module:geb-waiting",
+    "module:geb-exceptions",
     "internal:test-support",
     "integration:geb-grails",
     "integration:geb-gradle",
     "doc:manual",
-    "doc:new-manual",
+    "doc:manual-snippets",
     "doc:site"
 
 rootProject.name = 'geb'

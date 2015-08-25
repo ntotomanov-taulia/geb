@@ -23,6 +23,7 @@ import geb.test.RemoteWebDriverWithExpectations
 import geb.test.TestHttpServer
 import org.openqa.selenium.remote.DesiredCapabilities
 import spock.lang.Shared
+import spock.lang.Unroll
 
 class WebDriverCommandsSpec extends GebSpecWithServer {
 
@@ -46,11 +47,11 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         callbackAndWebDriverServer
     }
 
-    void 'going to a page and getting its title'() {
+    void "going to a page and getting its title"() {
         given:
         callbackAndWebDriverServer.responseHtml {
             head {
-                title 'a title'
+                title "a title"
             }
         }
 
@@ -63,30 +64,29 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         driver.getTitleExecuted()
     }
 
-    void 'using a selector that returns multiple elements'() {
+    void "using a selector that returns multiple elements"() {
         given:
         callbackAndWebDriverServer.responseHtml {
             body {
-                p 'first'
-                p 'second'
+                p "first"
+                p "second"
             }
         }
 
         when:
         go()
-        $('p')
+        $("p")
 
         then:
         driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
-        driver.findRootElementExecuted()
-        driver.findChildElementsByCssExecuted('p')
+        driver.findElementsByCssExecuted("p")
     }
 
-    void 'using form control shortcuts in a baseless module should not generate multiple root element searches'() {
+    void "using form control shortcuts in a baseless module should not generate multiple root element searches"() {
         given:
         callbackAndWebDriverServer.responseHtml {
             body {
-                input type: 'text', name: 'someName'
+                input type: "text", name: "someName"
             }
         }
 
@@ -103,7 +103,54 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         module.someName()
 
         then:
-        driver.findChildElementsByNameExecuted('someName')
+        driver.findChildElementsByNameExecuted("someName")
+    }
+
+    void "attribute map passed to find method is translated into a css selector"() {
+        given:
+        callbackAndWebDriverServer.responseHtml {
+            body {
+                input type: "text", name: "someName"
+            }
+        }
+
+        when:
+        go()
+        def input = $(type: "text", name: "someName")
+
+        then:
+        input
+
+        and:
+        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
+        driver.findElementsByCssExecuted("""[type="text"][name="someName"]""")
+    }
+
+    @Unroll("passing #attributes to find results in a findElements command using #using")
+    void "passing a single attribute map to find should be translated to a specific By selector usage where possible"() {
+        given:
+        callbackAndWebDriverServer.responseHtml {
+            body {
+                input id: "foo", class: "bar", name: "fizz"
+            }
+        }
+
+        when:
+        go()
+        def input = $(attributes)
+
+        then:
+        input
+
+        and:
+        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
+        driver.ensureExecuted("findElements", using: using, value: selector)
+
+        where:
+        attributes     | using        | selector
+        [id: "foo"]    | "id"         | "foo"
+        [class: "bar"] | "class name" | "bar"
+        [name: "fizz"] | "name"       | "fizz"
     }
 }
 

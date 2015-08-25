@@ -32,10 +32,19 @@ class FormElement extends Module {
     private final static String TRUE = "true"
 
     protected void initialized() {
-        if (!empty) {
-            if (!SUPPORTED_TAGS.contains(tag())) {
-                throw new InvalidModuleBaseException("Specified base element for ${getClass().name} module was '${tag()}' but only the following are allowed: ${SUPPORTED_TAGS.join(', ')}")
+        ensureAtMostOneBaseElement()
+        if (!navigator.empty) {
+            def tag = navigator.tag()
+            if (!SUPPORTED_TAGS.contains(tag.toLowerCase())) {
+                throw new InvalidModuleBaseException("Specified base element for ${getClass().name} module was '${tag}' but only the following are allowed: ${SUPPORTED_TAGS.join(', ')}")
             }
+        }
+    }
+
+    protected void ensureAtMostOneBaseElement() {
+        def size = navigator.size()
+        if (size > 1) {
+            throw new InvalidModuleBaseException("Specified base navigator for ${getClass().name} module has $size elements but at most one element is allowed.")
         }
     }
 
@@ -44,7 +53,10 @@ class FormElement extends Module {
      * @return true when the first element of base navigator is disabled
      */
     boolean isDisabled() {
-        def value = getAttribute(DISABLED)
+        if (empty) {
+            throw new UnsupportedOperationException("This operation is not supported on an empty navigator based ${getClass().name} module")
+        }
+        def value = navigator.getAttribute(DISABLED)
         // Different drivers return different values here
         (value == DISABLED || value == TRUE)
     }
@@ -64,7 +76,10 @@ class FormElement extends Module {
      * @return true when the first element of base navigator is read-only
      */
     boolean isReadOnly() {
-        def value = getAttribute(READONLY)
+        if (empty) {
+            throw new UnsupportedOperationException("This operation is not supported on an empty navigator based ${getClass().name} module")
+        }
+        def value = navigator.getAttribute(READONLY)
         (value == READONLY || value == TRUE)
     }
 

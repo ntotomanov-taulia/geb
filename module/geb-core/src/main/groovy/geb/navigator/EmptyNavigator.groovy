@@ -29,15 +29,7 @@ import static java.util.Collections.EMPTY_LIST
 class EmptyNavigator extends AbstractNavigator {
 
     EmptyNavigator(Browser browser) {
-        super(browser)
-    }
-
-    @Override
-    Navigator find(String selector) { this }
-
-    @Override
-    Navigator find(By bySelector) {
-        this
+        super(browser, new EmptyNavigatorBasicLocator(browser))
     }
 
     @Override
@@ -282,6 +274,35 @@ class EmptyNavigator extends AbstractNavigator {
             null
         } else {
             throw new MissingPropertyException(name, getClass())
+        }
+    }
+
+    @Override
+    int hashCode() {
+        EmptyNavigator.hashCode()
+    }
+
+    @Override
+    boolean equals(Object obj) {
+        obj instanceof EmptyNavigator
+    }
+
+    private static class EmptyNavigatorBasicLocator implements BasicLocator {
+
+        private final Browser browser
+
+        EmptyNavigatorBasicLocator(Browser browser) {
+            this.browser = browser
+        }
+
+        @Override
+        Navigator find(By bySelector) {
+            new EmptyNavigator(browser)
+        }
+
+        @Override
+        Navigator find(Map<String, Object> attributes, String selector) {
+            new EmptyNavigator(browser)
         }
     }
 }

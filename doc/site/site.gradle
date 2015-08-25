@@ -20,7 +20,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'io.ratpack:ratpack-gradle:0.9.8'
+        classpath 'io.ratpack:ratpack-gradle:0.9.19'
     }
 }
 
@@ -28,7 +28,7 @@ apply plugin: "io.ratpack.ratpack-groovy"
 
 ext {
     // The old versions of Geb we are including manuals for
-    oldManualVersions = ["0.6.2", "0.6.3", "0.7.0", "0.7.1", "0.7.2", "0.9.0", "0.9.1", "0.9.2", "0.9.3", "0.10.0"]
+    oldManualVersions = ["0.9.0", "0.9.1", "0.9.2", "0.9.3", "0.10.0", "0.12.0", "0.12.1", "0.12.2"]
 
     currentVersion = isSnapshot ? oldManualVersions.last() : version
     manualsMetadata = [
@@ -60,9 +60,7 @@ dependencies {
         "$group:geb-manual:$it@zip"
     }
 
-    springloaded "org.springframework:springloaded:1.2.0.RELEASE"
-    compile ratpack.dependency("groovy")
-    testCompile "org.spockframework:spock-core:0.7-groovy-2.0",
+    testCompile spockDependency,
         "org.jsoup:jsoup:1.7.3",
         project(':module:geb-spock'),
         htmlUnitDriverDependency,
@@ -102,9 +100,8 @@ task generateConfigProperties() {
     doLast {
         def properties = new Properties()
         manualsMetadata.each { key, value ->
-            properties.setProperty("other.${key}", value)
+            properties.setProperty("manuals.${key}", value)
         }
-        properties.setProperty("other.groovy.compileStatic", "true")
         propertiesFile.withWriter { Writer writer ->
             properties.store(writer, null)
         }
@@ -119,9 +116,7 @@ task publish(type: Exec) {
     mustRunAfter ':integration:geb-grails:publish', rootProject.allprojects*.tasks*.withType(Upload)
 }
 
-idea {
-    module {
-        excludeDirs += gatherManuals.destinationDir
-    }
+task prepareDeployment(type: Sync) {
+    into rootProject.file("deploy")
+    with distributions.main.contents
 }
-

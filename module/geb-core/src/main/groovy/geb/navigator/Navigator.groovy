@@ -108,6 +108,48 @@ interface Navigator extends Iterable<Navigator>, Locator {
     Navigator not(Map<String, Object> predicates)
 
     /**
+     * Filters the set of elements represented by this Navigator to exclude that have one or more descendants
+     * that match the selector.
+     * @param selector a CSS selector
+     * @return a new Navigator instance
+     */
+    Navigator hasNot(String selector)
+
+    /**
+     * Filters the set of elements represented by this Navigator to exclude that have one or more descendants
+     * that match the selector and attributes as defined in the predicate.
+     * @param selector a CSS selector
+     * @param predicates a Map with keys representing attributes and values representing excluded values or patterns
+     * @return a new Navigator instance
+     */
+    Navigator hasNot(Map<String, Object> predicates, String selector)
+
+    /**
+     * Filters the set of elements represented by this Navigator to exclude that have one or more descendants
+     * that match the attributes as defined in the predicate.
+     * @param predicates a Map with keys representing attributes and values representing excluded values or patterns
+     * @return a new Navigator instance
+     */
+    Navigator hasNot(Map<String, Object> predicates)
+
+    /**
+     * Filters the set of elements represented by this Navigator to exclude that have one or more descendants
+     * that match the bySelector.
+     * @param bySelector a WebDriver By selector
+     * @return a new Navigator instance
+     */
+    Navigator hasNot(By bySelector)
+
+    /**
+     * Filters the set of elements represented by this Navigator to exclude that have one or more descendants
+     * that match the bySelector and attributes as defined in the predicate.
+     * @param bySelector a WebDriver By selector
+     * @param predicates a Map with keys representing attributes and values representing required values or patterns
+     * @return a new Navigator instance
+     */
+    Navigator hasNot(Map<String, Object> predicates, By bySelector)
+
+    /**
      * Gets the wrapped element at the given index.
      * <p>
      * When no such element exists, an empty Navigator instance is returned.
@@ -628,28 +670,36 @@ interface Navigator extends Iterable<Navigator>, Locator {
      * Shorthand for <code>hasAttribute("disabled")</code>.
      * @return true when the first element is disabled
      * @throws java.lang.UnsupportedOperationException if this navigator contains anything else than a button, input, option, select or textarea
+     * @deprecated Use {@link geb.module.FormElement#isDisabled()} instead.
      */
+    @Deprecated
     boolean isDisabled()
 
     /**
      * Shorthand for <code>!hasAttribute("disabled")</code>.
      * @return true when the first element is enabled
      * @throws java.lang.UnsupportedOperationException if this navigator contains anything else than a button, input, option, select or textarea
+     * @deprecated Use {@link geb.module.FormElement#isEnabled()} instead.
      */
+    @Deprecated
     boolean isEnabled()
 
     /**
      * Shorthand for <code>hasAttribute("readonly")</code>.
      * @return true when the first element is readonly
      * @throws java.lang.UnsupportedOperationException if this navigator contains anything else than an input or a textarea
+     * @deprecated Use {@link geb.module.FormElement#isReadOnly()} instead.
      */
+    @Deprecated
     boolean isReadOnly()
 
     /**
      * Shorthand for <code>!hasAttribute("readonly")</code>.
      * @return true when the first element is editable
      * @throws java.lang.UnsupportedOperationException if this navigator contains anything else than an input or a textarea
+     * @deprecated Use {@link geb.module.FormElement#isEditable()} instead.
      */
+    @Deprecated
     boolean isEditable()
 
     /**
@@ -799,19 +849,25 @@ interface Navigator extends Iterable<Navigator>, Locator {
      * Returns the first context element (not wrapped).
      * @return the first context element (not wrapped)
      */
+    // tag::web_element_returning_methods[]
     WebElement firstElement()
+    // end::web_element_returning_methods[]
 
     /**
      * Returns the last context element (not wrapped).
      * @return the last context element (not wrapped)
      */
+    // tag::web_element_returning_methods[]
     WebElement lastElement()
+    // end::web_element_returning_methods[]
 
     /**
      * Returns all context elements.
      * @return all context elements
      */
+    // tag::web_element_returning_methods[]
     Collection<WebElement> allElements()
+    // end::web_element_returning_methods[]
 
     Iterator<Navigator> iterator()
 

@@ -39,18 +39,55 @@ class SelectControlSpec extends GebSpecWithCallbackServer {
         $().s1().value() == "o1"
         $().s2 == "o2"
         $().s2().value() == "o2"
+    }
+
+    def "single select setting nonexistent value"() {
+        given:
+        html {
+            select(name: "s1") {
+                option(value: "o1", "t1")
+                option(value: "o2", "t2")
+            }
+        }
 
         when:
         $().s1 = "o3"
 
         then:
-        thrown(IllegalArgumentException)
+        IllegalArgumentException e = thrown()
+        e.message == "Couldn't select option with text or value: o3, available texts: [t1, t2], available values: [o1, o2]"
+    }
+
+    def "single select setting by value"() {
+        given:
+        html {
+            select(name: "s1") {
+                option(value: "o1", "t1")
+                option(value: "o2", "t2")
+            }
+        }
 
         when:
         $().s1 = "o2"
 
         then:
-        $().s1().value() == "o2"
+        $().s1 == "o2"
+    }
+
+    def "single select setting by text"() {
+        given:
+        html {
+            select(name: "s1") {
+                option(value: "o1", "t1")
+                option(value: "o2", "t2")
+            }
+        }
+
+        when:
+        $().s1 = "t2"
+
+        then:
+        $().s1 == "o2"
     }
 
     def "multiSelect - read"() {
@@ -77,30 +114,30 @@ class SelectControlSpec extends GebSpecWithCallbackServer {
         $().s2().value() == ["o2"]
         $().s3 == ["o1", "o2"]
         $().s3().value() == ["o1", "o2"]
+    }
+
+    def "multiselect setting nonexistent value"() {
+        given:
+        html {
+            select(name: "s1", multiple: "multiple") {
+                option(value: "o1", "o1")
+                option(value: "o2", "o2")
+            }
+        }
 
         when:
         $().s1 = "o3"
 
         then:
-        thrown(IllegalArgumentException)
+        IllegalArgumentException e = thrown()
+        e.message == "Couldn't select option with text or value: o3, available texts: [o1, o2], available values: [o1, o2]"
 
         when:
         $().s1 = ["o1", "o3"]
 
         then:
-        thrown(IllegalArgumentException)
-
-        when:
-        $().s1 = "o2"
-
-        then:
-        $().s1().value() == ["o2"]
-
-        when:
-        $().s1 = ["o1"]
-
-        then:
-        $().s1().value() == ["o1"]
+        e = thrown()
+        e.message == "Couldn't select option with text or value: o3, available texts: [o1, o2], available values: [o1, o2]"
     }
 
     def "multiSelect - set by value"() {

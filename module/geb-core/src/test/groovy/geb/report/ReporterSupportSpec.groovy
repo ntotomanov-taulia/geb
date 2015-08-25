@@ -15,29 +15,31 @@
  */
 package geb.report
 
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
 class ReporterSupportSpec extends Specification {
 
-    def reportDir = new File("build/tmp/ReporterSupportSpec")
+    @Rule TemporaryFolder tempFolder
 
-    def setup() {
-        assert (!reportDir.exists() || reportDir.deleteDir()) && reportDir.mkdirs()
+    File getReportDir() {
+        tempFolder.root
     }
 
     def "report filename escaping"() {
         given:
         def reporter = new ReporterSupport() {
             void writeReport(ReportState reportState) {
-                getFile(reportState.outputDir, reportState.label, "12 | 34") << "content"
+                getFile(reportState.outputDir, reportState.label, "12 | 34 | zф") << "content"
             }
         }
 
         when:
-        reporter.writeReport(new ReportState(null, "12 | 34", reportDir))
+        reporter.writeReport(new ReportState(null, "12 | 34 | zф", reportDir))
 
         then:
-        new File(reportDir, "12 _ 34.12 _ 34").exists()
+        new File(reportDir, "12 _ 34 _ zф.12 _ 34 _ zф").exists()
     }
 
     def "listener added more than once is not called twice"() {
@@ -61,9 +63,5 @@ class ReporterSupportSpec extends Specification {
         then:
         1 * l1.onReport(reporter, state, files)
         1 * l2.onReport(reporter, state, files)
-    }
-
-    def cleanup() {
-        reportDir.deleteDir()
     }
 }

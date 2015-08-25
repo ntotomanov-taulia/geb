@@ -15,14 +15,14 @@
  */
 package geb.waiting;
 
-import geb.error.GebException;
+import geb.error.GebAssertionError;
 
 /**
  * Thrown when a wait operation exceeds its timeout.
  *
  * The {@code cause} of the exception will be the exception thrown while waiting.
  */
-public class WaitTimeoutException extends GebException {
+public class WaitTimeoutException extends GebAssertionError {
 
     protected Object lastEvaluationValue;
 
@@ -42,19 +42,23 @@ public class WaitTimeoutException extends GebException {
         this.lastEvaluationValue = lastEvaluationValue;
     }
 
-    public Object getLastEvaluationValue() {
-        return lastEvaluationValue;
-    }
-
     private static String toMessage(Wait wait, Throwable cause) {
         StringBuilder message = new StringBuilder(String.format("condition did not pass in %s seconds", wait.getTimeout()));
         if (wait.getCustomMessage() != null) {
             message.append(String.format("(%s)", wait.getCustomMessage()));
         }
         if (cause != null) {
-            message.append(" (failed with exception)");
+            if (wait.getIncludeCauseInExceptionMessage()) {
+                message.append(String.format(". Failed with exception:%n%s", cause));
+            } else {
+                message.append(" (failed with exception)");
+            }
         }
         return message.toString();
+    }
+
+    public Object getLastEvaluationValue() {
+        return lastEvaluationValue;
     }
 
 }

@@ -18,10 +18,8 @@ import geb.content.SimplePageContent
 import geb.error.*
 import geb.test.GebSpecWithCallbackServer
 import spock.lang.Issue
-import spock.lang.Stepwise
 import spock.lang.Unroll
 
-@Stepwise
 class PageOrientedSpec extends GebSpecWithCallbackServer {
 
     def setupSpec() {
@@ -268,7 +266,7 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
         link.@id == "a"
     }
 
-    @Issue("http://jira.codehaus.org/browse/GEB-2")
+    @Issue("https://github.com/geb/issues/issues/2")
     def "can call instance methods from content definition blocks"() {
         when:
         to InstanceMethodPage
@@ -276,7 +274,7 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
         val == 3
     }
 
-    @Issue("http://jira.codehaus.org/browse/GEB-139")
+    @Issue("https://github.com/geb/issues/issues/139")
     def "convertToPath should not introduce slashes were it should not"() {
         when: 'we go to the page by specifying the parameter manually'
         via ConvertPage, theParam: "foo"
@@ -332,7 +330,7 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
 
         then:
         InvalidPageContent e = thrown()
-        e.message == "'page' content parameter should be a class that extends Page but it isn't for $contentName - ${pageClass.newInstance()}: $pageParameter"
+        e.message == "'page' content parameter should be a class that extends Page but it isn't for content template '$contentName' defined by ${pageClass.newInstance()}: $pageParameter"
 
         where:
         pageClass                        | contentName  | pageParameter
@@ -368,6 +366,33 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
 
         where:
         contentName << ["linkWithToWaitAndVariantTo", "linkWithToWaitAndVariantToUsingPageInstances"]
+    }
+
+    def "unrecognized content template parameters are reported"() {
+        when:
+        to PageWithContentUsingUnrecognizedParams
+
+        then:
+        InvalidPageContent e = thrown()
+        e.message == "Content template 'withInvalidParams' defined by ${PageWithContentUsingUnrecognizedParams.name} uses unknown content parameters: bar, foo"
+    }
+
+    def "ensure that an exception message with all page wise error details is thrown when no match is found in given list of pages"() {
+        when:
+        to PageOrientedSpecPageA
+        page(PageWithAtCheckerReturningFalse, PageOrientedSpecPageB, PageOrientedSpecPageC, PageWithAtCheckWaiting)
+
+        then:
+        UnexpectedPageException e = thrown()
+        println e.getMessage()
+        e.getMessage() =~ '''(?ms)^Unable to find page match\\. At checker verification results:$.*
+^Result for geb\\.PageWithAtCheckerReturningFalse: false$.*
+^Result for geb\\.PageOrientedSpecPageB: geb\\.error\\.RequiredPageContentNotPresent:.*
+^Result for geb\\.PageOrientedSpecPageC: Assertion failed:.*
+^false$.*
+^Result for geb\\.PageWithAtCheckWaiting: geb\\.waiting\\.WaitTimeoutException:.*
+Caused by: Assertion failed:.*
+^false$.*'''
     }
 }
 
@@ -484,4 +509,14 @@ class PageOrientedSpecParametrizedPage extends Page {
     static content = {
         elementWithId { $(id: id) }
     }
+}
+
+class PageWithContentUsingUnrecognizedParams extends Page {
+    static content = {
+        withInvalidParams(foo: 1, bar: 2) { $() }
+    }
+}
+
+class PageWithAtCheckWaiting extends Page {
+    static at = { waitFor(0.1) { false } }
 }

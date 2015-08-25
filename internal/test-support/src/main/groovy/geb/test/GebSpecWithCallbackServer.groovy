@@ -17,9 +17,6 @@ package geb.test
 
 import spock.lang.Shared
 
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-
 class GebSpecWithCallbackServer extends GebSpecWithServer {
 
     @Shared
@@ -36,12 +33,14 @@ class GebSpecWithCallbackServer extends GebSpecWithServer {
 
     def responseHtml(String html) {
         callbackServer.responseHtml(html)
-        server.get = { HttpServletRequest request, HttpServletResponse response ->
-            response.writer << html
-        }
     }
 
     void html(Closure html) {
+        responseHtml(html)
+        go()
+    }
+
+    void html(String html) {
         responseHtml(html)
         go()
     }

@@ -21,7 +21,9 @@ import org.openqa.selenium.By
  * Allows to create {@link geb.navigator.Navigator}s by selecting {@link org.openqa.selenium.WebElement}s
  * using different criteria (CSS selectors, attribute maps, indexes, ranges and {@link org.openqa.selenium.By} selectors).
  */
-interface Locator {
+interface Locator extends BasicLocator {
+
+    public static final String MATCH_ALL_SELECTOR = "*"
 
     /**
      * Shorthand for <code>find(null, selector, null)</code>
@@ -39,6 +41,26 @@ interface Locator {
      * @see #find(java.lang.String)
      */
     Navigator $(String selector)
+
+    /**
+     * Creates a new Navigator instance containing the elements whose attributes match the specified values or patterns.
+     * The key 'text' can be used to match the text contained in elements. Regular expression Pattern objects may be
+     * used as values.
+     * <p>Examples:</p>
+     * <dl>
+     * <dt>find(name: "firstName")</dt>
+     * <dd>selects all elements with the name "firstName"</dd>
+     * <dt>find(name: "firstName", readonly: "readonly")</dt>
+     * <dd>selects all elements with the name "firstName" that are read-only</dd>
+     * <dt>find(text: "I can has cheezburger")</dt>
+     * <dd>selects all elements containing the exact text</dd>
+     * <dt>find(text: ~/I can has.+/)</dt>
+     * <dd>selects all elements whose text matches a regular expression</dd>
+     * </dl>
+     * @param predicates a Map with keys representing attributes and values representing required values or patterns
+     * @return a new Navigator instance containing the matched elements
+     */
+    Navigator find(Map<String, Object> attributes)
 
     /**
      * Shorthand for <code>find(selector)[indexOfElement]</code>.
@@ -71,7 +93,6 @@ interface Locator {
      *
      * @param selector The css selector
      * @return new Navigator
-     * @see #find(java.lang.String, groovy.lang.Range)
      */
     Navigator $(String selector, Range<Integer> range)
 
@@ -81,7 +102,6 @@ interface Locator {
      * @param bySelector a WebDriver By selector
      * @param predicates a Map with keys representing attributes and values representing required values or patterns
      * @return a new Navigator instance containing the matched elements
-     * @see #find(java.util.Map, org.openqa.selenium.By)
      */
     Navigator $(Map<String, Object> attributes, By bySelector)
 
@@ -99,7 +119,6 @@ interface Locator {
      *
      * @param bySelector a WebDriver By selector
      * @return new Navigator
-     * @see #find(java.util.Map, org.openqa.selenium.By, int)
      */
     Navigator $(Map<String, Object> attributes, By bySelector, int index)
 
@@ -116,7 +135,6 @@ interface Locator {
      *
      * @param bySelector a WebDriver By selector
      * @return new Navigator instance containing the matched elements
-     * @see #find(java.util.Map, org.openqa.selenium.By, groovy.lang.Range)
      */
     Navigator $(Map<String, Object> attributes, By bySelector, Range<Integer> range)
 
@@ -133,17 +151,9 @@ interface Locator {
      *
      * @param bySelector a WebDriver By selector
      * @return new Navigator
-     * @see #find(org.openqa.selenium.By)
+     * @see BasciLocator#find(org.openqa.selenium.By)
      */
     Navigator $(By bySelector)
-
-    /**
-     * Shorthand for <code>find(null, bySelector, null)</code>
-     *
-     * @param bySelector a WebDriver By selector
-     * @return new Navigator
-     */
-    Navigator find(By bySelector)
 
     /**
      * Shorthand for <code>find(bySelector, index)</code>.
@@ -168,7 +178,6 @@ interface Locator {
      *
      * @param bySelector a WebDriver By selector
      * @return new Navigator
-     * @see #find(org.openqa.selenium.By, groovy.lang.Range)
      */
     Navigator $(By bySelector, Range<Integer> range)
 
@@ -181,31 +190,10 @@ interface Locator {
     Navigator find(By bySelector, Range<Integer> range)
 
     /**
-     * Creates a new Navigator instance containing the elements whose attributes match the specified values or patterns.
-     * The key 'text' can be used to match the text contained in elements. Regular expression Pattern objects may be
-     * used as values.
-     * <p>Examples:</p>
-     * <dl>
-     * <dt>find(name: "firstName")</dt>
-     * <dd>selects all elements with the name "firstName"</dd>
-     * <dt>find(name: "firstName", readonly: "readonly")</dt>
-     * <dd>selects all elements with the name "firstName" that are read-only</dd>
-     * <dt>find(text: "I can has cheezburger")</dt>
-     * <dd>selects all elements containing the exact text</dd>
-     * <dt>find(text: ~/I can has.+/)</dt>
-     * <dd>selects all elements whose text matches a regular expression</dd>
-     * </dl>
-     * @param predicates a Map with keys representing attributes and values representing required values or patterns
-     * @return a new Navigator instance containing the matched elements
-     */
-    Navigator find(Map<String, Object> attributes)
-
-    /**
      * Shorthand for <code>find(predicates)</code>
      *
      * @param predicates a Map with keys representing attributes and values representing required values or patterns
      * @return a new Navigator instance containing the matched elements
-     * @see #find(java.util.Map)
      */
     Navigator $(Map<String, Object> attributes)
 
@@ -231,7 +219,6 @@ interface Locator {
      *
      * @param selector
      * @return new Navigator
-     * @see #find(java.util.Map, int)
      */
     Navigator $(Map<String, Object> attributes, int index)
 
@@ -241,18 +228,8 @@ interface Locator {
      * @param predicates attribute predicates
      * @param predicates range the range of matches to select
      * @return new Navigator
-     * @see #find(java.util.Map, groovy.lang.Range)
      */
     Navigator $(Map<String, Object> attributes, Range<Integer> range)
-
-    /**
-     * Selects elements by both CSS selector and attributes. For example find("input", name: "firstName") will select
-     * all input elements with the name "firstName".
-     * @param selector a CSS selector
-     * @param predicates a Map with keys representing attributes and values representing required values or patterns
-     * @return a new Navigator instance containing the matched elements
-     */
-    Navigator find(Map<String, Object> attributes, String selector)
 
     /**
      * Shorthand for <code>find(predicates, selector)</code>
@@ -260,7 +237,6 @@ interface Locator {
      * @param selector a CSS selector
      * @param predicates a Map with keys representing attributes and values representing required values or patterns
      * @return a new Navigator instance containing the matched elements
-     * @see #find(java.util.Map, java.lang.String)
      */
     Navigator $(Map<String, Object> attributes, String selector)
 
@@ -303,7 +279,6 @@ interface Locator {
      *
      * @param selector
      * @return new Navigator
-     * @see #find(java.util.Map, java.lang.String, int)
      */
     Navigator $(Map<String, Object> attributes, String selector, int index)
 
@@ -312,7 +287,6 @@ interface Locator {
      *
      * @param selector a CSS selector
      * @return new Navigator instance containing the matched elements
-     * @see #find(java.util.Map, groovy.lang.Range)
      */
     Navigator $(Map<String, Object> attributes, String selector, Range<Integer> range)
 }

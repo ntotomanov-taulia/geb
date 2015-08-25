@@ -1,24 +1,38 @@
 apply plugin: 'base'
 apply plugin: 'idea'
+apply plugin: 'io.codearte.nexus-staging'
 apply from: "gradle/idea.gradle"
 
 buildscript {
     repositories {
         mavenCentral()
     }
+
+    dependencies {
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+    }
+}
+
+def getProperty(String name, defaultValue) {
+    hasProperty(name) ? property(name) : defaultValue
+}
+
+nexusStaging {
+    username = getProperty("sonatypeOssUsername", null)
+    password = getProperty("sonatypeOssPassword", null)
 }
 
 allprojects { project ->
-    version = '0.10.1-SNAPSHOT'
+    version = '1.0-SNAPSHOT'
     group = 'org.gebish'
 
     ext {
         isSnapshot = version.endsWith("-SNAPSHOT")
         isCi = project.hasProperty("ci")
 
-        seleniumVersion = "2.43.1"
-        groovyVersion = "2.3.6"
-        spockVersion = "0.7-groovy-2.0"
+        seleniumVersion = "2.45.0"
+        groovyVersion = "2.4.3"
+        spockVersion = "1.0-groovy-2.4"
         junit4Version = "4.10"
 
         spockDependency = dependencies.create("org.spockframework:spock-core:$spockVersion") {
@@ -46,17 +60,18 @@ allprojects { project ->
             ":module:geb-core", ":internal:test-support",
             ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4",
             ":module:geb-testng", ":module:geb-implicit-assertions",
-            ":module:geb-ast", ":module:geb-waiting", ":integration:geb-gradle", ":doc:site", ":doc:new-manual"
+            ":module:geb-ast", ":module:geb-waiting", ":module:geb-exceptions",
+            ":integration:geb-gradle", ":doc:site", ":doc:manual-snippets"
         ]
 
         publishedModules = [
-            ":module:geb-core", ":module:geb-implicit-assertions", ":module:geb-ast", ":module:geb-waiting",
-            ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4",
-            ":module:geb-testng", ":doc:manual", ":integration:geb-gradle"
+            ":module:geb-core", ":module:geb-implicit-assertions", ":module:geb-ast", ":module:geb-waiting", ":module:geb-exceptions",
+            ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4", ":module:geb-testng",
+            ":doc:manual", ":integration:geb-gradle"
         ]
 
         publishedGroovyModules = groovyModules.findAll { it in publishedModules }
-        apiGroovyModules = publishedGroovyModules - ":module:geb-implicit-assertions"
+        apiGroovyModules = publishedGroovyModules - ":module:geb-implicit-assertions" - ":integration:geb-gradle"
 
         grailsPluginModule = ":integration:geb-grails"
     }
@@ -81,8 +96,7 @@ subprojects {
             codenarc 'org.codenarc:CodeNarc:0.22'
         }
 
-        sourceCompatibility = 1.5
-        targetCompatibility = 1.5
+        sourceCompatibility = 1.7
 
         tasks.withType(Test) {
             reports.junitXml.destination = reporting.file("test-results/$name")
@@ -123,6 +137,17 @@ subprojects {
         artifacts {
             archives javadocJar, sourcesJar
         }
+
+        gradle.taskGraph.whenReady { taskGraph ->
+            if (taskGraph.hasTask(uploadArchives)) {
+                tasks.withType(JavaCompile) {
+                    options.compilerArgs << "-Werror" << "-Xlint:options"
+                }
+                tasks.withType(GroovyCompile) {
+                    options.compilerArgs << "-Werror" << "-Xlint:options"
+                }
+            }
+        }
     }
 
     tasks.withType(Groovydoc) {
@@ -143,7 +168,7 @@ subprojects {
         link "http://static.javadoc.io/junit/junit/$junit4Version",
             "org.junit"
 
-        link "http://groovy.codehaus.org/api/",
+        link "http://docs.groovy-lang.org/docs/groovy-${groovyVersion}/html/api/",
             "groovy.lang"
 
         def docName = project.name == "manual" ? "Geb" : project.name
@@ -208,7 +233,6 @@ task release {
         { allprojects.findAll { it.path in publishedModules }*.uploadArchives }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion "1.7"
+task stage(type: Sync) {
+    dependsOn 'doc:site:prepareDeployment'
 }
-
