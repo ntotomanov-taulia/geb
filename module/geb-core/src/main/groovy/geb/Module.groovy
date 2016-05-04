@@ -26,11 +26,7 @@ import geb.frame.UninitializedFrameSupport
 import geb.interaction.DefaultInteractionsSupport
 import geb.interaction.InteractionsSupport
 import geb.interaction.UninitializedInteractionSupport
-import geb.js.AlertAndConfirmSupport
-import geb.js.DefaultAlertAndConfirmSupport
-import geb.js.JQueryAdapter
-import geb.js.JavascriptInterface
-import geb.js.UninitializedAlertAndConfirmSupport
+import geb.js.*
 import geb.navigator.Navigator
 import geb.navigator.factory.NavigatorFactory
 import geb.textmatching.TextMatchingSupport
@@ -68,18 +64,27 @@ class Module implements Navigator, PageContentContainer, Initializable, WaitingS
     //manually delegating here because @Delegate doesn't work with cross compilation http://jira.codehaus.org/browse/GROOVY-6865
     protected Navigator navigator
 
+    protected Browser browser
+
+    private StringRepresentationProvider stringRepresentationProvider = this
+
     @SuppressWarnings("SpaceBeforeOpeningBrace")
     void init(Browser browser, NavigatorFactory navigatorFactory) {
-        navigator = navigatorFactory.base
+        this.browser = browser
+        this.navigator = navigatorFactory.base
         Map<String, PageContentTemplate> contentTemplates = PageContentTemplateBuilder.build(browser, this, navigatorFactory, 'content', this.class, Module)
-        pageContentSupport = new DefaultPageContentSupport(this, contentTemplates, navigatorFactory, navigator)
-        downloadSupport = new DefaultDownloadSupport(browser)
-        waitingSupport = new DefaultWaitingSupport(browser.config)
-        frameSupport = new DefaultFrameSupport(browser)
-        js = browser.js
-        alertAndConfirmSupport = new DefaultAlertAndConfirmSupport({ js }, browser.config)
-        interactionsSupport = new DefaultInteractionsSupport(browser)
+        this.pageContentSupport = new DefaultPageContentSupport(this, contentTemplates, navigatorFactory, this.navigator)
+        this.downloadSupport = new DefaultDownloadSupport(browser)
+        this.waitingSupport = new DefaultWaitingSupport(browser.config)
+        this.frameSupport = new DefaultFrameSupport(browser)
+        this.js = browser.js
+        this.alertAndConfirmSupport = new DefaultAlertAndConfirmSupport({ this.js }, browser.config)
+        this.interactionsSupport = new DefaultInteractionsSupport(browser)
         initialized()
+    }
+
+    void init(PageContentTemplate template, Object[] args) {
+        stringRepresentationProvider = new TemplateDerivedContentStringRepresentationProvider(template, args, this)
     }
 
     @SuppressWarnings("EmptyMethod")
@@ -202,6 +207,16 @@ class Module implements Navigator, PageContentContainer, Initializable, WaitingS
     }
 
     @Override
+    <T extends Module> List<T> moduleList(Class<T> moduleClass) {
+        getInitializedNavigator().moduleList(moduleClass)
+    }
+
+    @Override
+    <T extends Module> List<T> moduleList(Closure<T> moduleFactory) {
+        getInitializedNavigator().moduleList(moduleFactory)
+    }
+
+    @Override
     String css(String propertyName) {
         getInitializedNavigator().css(propertyName)
     }
@@ -259,6 +274,11 @@ class Module implements Navigator, PageContentContainer, Initializable, WaitingS
     @Override
     WebElement lastElement() {
         getInitializedNavigator().lastElement()
+    }
+
+    @Override
+    WebElement singleElement() {
+        getInitializedNavigator().singleElement()
     }
 
     @Override
@@ -728,6 +748,11 @@ class Module implements Navigator, PageContentContainer, Initializable, WaitingS
     }
 
     @Override
+    boolean isFocused() {
+        getInitializedNavigator().focused
+    }
+
+    @Override
     def <T> T waitFor(Map params = [:], String waitPreset, Closure<T> block) {
         waitingSupport.waitFor(params, waitPreset, block)
     }
@@ -750,5 +775,14 @@ class Module implements Navigator, PageContentContainer, Initializable, WaitingS
     GebException uninitializedException() {
         def message = "Instance of module ${getClass()} has not been initialized. Please pass it to Navigable.module() or Navigator.module() before using it."
         throw new ModuleInstanceNotInitializedException(message)
+    }
+
+    String getStringRepresentation() {
+        getClass().name
+    }
+
+    @Override
+    String toString() {
+        stringRepresentationProvider.stringRepresentation
     }
 }

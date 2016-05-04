@@ -21,15 +21,15 @@ import geb.test.CallbackHttpServer
 class GebReportingSpecSpec extends GebReportingSpec {
 
     @Shared
-        server = new CallbackHttpServer()
+    def server = new CallbackHttpServer()
 
     static responseText = """
-		<html>
-		<body>
-			<div class="d1" id="d1">d1</div>
-		</body>
-		</html>
-	"""
+        <html>
+            <body>
+                <div class="d1" id="d1">d1</div>
+            </body>
+        </html>
+    """
 
     def setupSpec() {
         server.start()
@@ -40,6 +40,7 @@ class GebReportingSpecSpec extends GebReportingSpec {
 
     def setup() {
         baseUrl = server.baseUrl
+        config.reportOnTestFailureOnly = false
         go()
     }
 
@@ -62,7 +63,39 @@ class GebReportingSpecSpec extends GebReportingSpec {
 
     def "there should be a second report"() {
         expect:
-        reportGroupDir.listFiles().any { it.name.startsWith("002") }
+        reportGroupDir.listFiles()*.name.any { it.startsWith("002") }
+    }
+
+    def "reportOnTestFailureOnly is enabled - passing test"() {
+        given:
+        config.reportOnTestFailureOnly = true
+    }
+
+    def "reportOnTestFailureOnly is enabled - failing test"() {
+        given:
+        config.reportOnTestFailureOnly = true
+        failureTracker.failed = true
+    }
+
+    def "reportOnTestFailureOnly is disabled - failing test"() {
+        given:
+        config.reportOnTestFailureOnly = false
+        failureTracker.failed = true
+    }
+
+    def "there should be no report for the passing test when reportOnTestFailureOnly is enabled"() {
+        expect:
+        !reportGroupDir.listFiles()*.name.any { it.contains("reportOnTestFailureOnly is enabled - passing test") }
+    }
+
+    def "there should be reports for the failing tests with label 'failure'"() {
+        when:
+        def fileNames = reportGroupDir.listFiles()*.name
+
+        then:
+        fileNames.any { it.contains("reportOnTestFailureOnly is enabled - failing test-failure") }
+        fileNames.any { it.contains("reportOnTestFailureOnly is disabled - failing test-failure") }
+        !fileNames.any { it.contains("reportOnTestFailureOnly is disabled - failing test-end") }
     }
 
     def cleanupSpec() {

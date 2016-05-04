@@ -48,21 +48,21 @@ platform=MAC
 
 as the ”browser specification“. For a full list of available browsers, versions and operating systems refer to your cloud provider's documentation:
 
-* https://saucelabs.com/docs/platforms/webdriver[SauceLabs platform list]
-* http://www.browserstack.com/list-of-browsers-and-platforms?product=automate[BrowserStack Browsers and Platforms list]
+* link:https://saucelabs.com/docs/platforms/webdriver[SauceLabs platform list]
+* link:http://www.browserstack.com/list-of-browsers-and-platforms?product=automate[BrowserStack Browsers and Platforms list]
 
 Please note that Geb Gradle plugins can set the `geb.saucelabs.browser`/`geb.browserstack.browser` system properties for you using the aforementioned format.
 
 Following the browser specification are the username and access key used to identify your account with the cloud provider.
 The example uses two environment variables to access this information.
-This is usually the easiest way of passing something secret to your build in open CI services like https://drone.io/[drone.io] or https://travis-ci.org/[Travis CI] if your code is public, but you can
+This is usually the easiest way of passing something secret to your build in open CI services like link:https://drone.io/[drone.io] or link:https://travis-ci.org/[Travis CI] if your code is public, but you can
 use other mechanisms if desired.
 
 You can optionally pass additional configuration settings by providing a Map to the `create()` method as the last parameter.
 The configuration options available are described in your cloud provider's documentation:
 
-* https://saucelabs.com/docs/additional-config[SauceLabs additional config]
-* http://www.browserstack.com/automate/capabilities[BrowserStack Capabilities]
+* link:https://saucelabs.com/docs/additional-config[SauceLabs additional config]
+* link:http://www.browserstack.com/automate/capabilities[BrowserStack Capabilities]
 
 Finally, there is also link:api/geb/driver/CloudDriverFactory.html#create(java.lang.String,%20java.lang.String,%20Map%3CString,%20Object%3E)[an overloaded version of `create()` method] available that
 doesn't take a string specification and allows you to simply specify all the required capabilities using a map.
@@ -138,6 +138,8 @@ Following is an example of using the geb-saucelabs Gradle plugin.
 
 [source,groovy,subs="attributes,verbatim"]
 ----
+import geb.gradle.saucelabs.SauceAccount
+
 apply plugin: "geb-saucelabs" //<1>
 
 buildscript { //<2>
@@ -198,19 +200,21 @@ running the generated test tasks which means that the browsers in the cloud will
 <8> Pass credentials for {sauce-connect}.
 <9> Additionally configure {sauce-connect} if desired.
 <10> Override the port used by SauceConnect, defaults to 4445.
-<11> Pass additional https://docs.saucelabs.com/reference/sauce-connect/#command-line-options[command line options] to SauceConnect.
+<11> Pass additional link:https://docs.saucelabs.com/reference/sauce-connect/#command-line-options[command line options] to SauceConnect.
 
 [TIP]
 ====
 You can use `allSauceLabsTests` task that will depend on all of the generated test tasks to run all of them during a build.
 ====
 
-=== geb-browserstack
+=== geb-browserstack plugin
 
 Following is an example of using the geb-browserstack Gradle plugin.
 
 [source,groovy,subs="attributes,verbatim"]
 ----
+import geb.gradle.browserstack.BrowserStackAccount
+
 apply plugin: "geb-browserstack" //<1>
 
 buildscript { //<2>
@@ -256,6 +260,20 @@ This configuration property controls the `-forcelocal` flag and the default valu
 <6> Explicitly specify the required browser capabilities if the shorthand syntax doesn't allow you to express all needed capabilities; the example will generate a `Test` task named `nexus4Test`.
 <7> Configure all of the generated test tasks; for each of them the closure is run with delegate set to a test task being configured.
 <8> Pass credentials for BrowserStack.
+
+It's also possible to specify location and credentials for the proxy to be used with the BrowserStack Tunnel:
+
+[source,groovy,subs="attributes,verbatim"]
+----
+browserStack {
+    account {
+        proxyHost = '127.0.0.1'
+        proxyPort = '8080'
+        proxyUser = 'user'
+        proxyPass = 'secret'
+    }
+}
+----
 
 [TIP]
 ====

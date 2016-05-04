@@ -40,6 +40,10 @@ class PageContentTemplateBuilder {
         def definition = null
         def params = null
 
+        if (PageContentNames.isNotAllowed(container, name)) {
+            throw new InvalidPageContent("${container.class.name} uses a not allowed content name: '$name'. Please use another name.")
+        }
+
         if (args.size() == 0) {
             throw new InvalidPageContent("Definition of page content template '$name' of '$container' contains no definition")
         } else if (args.size() == 1) {

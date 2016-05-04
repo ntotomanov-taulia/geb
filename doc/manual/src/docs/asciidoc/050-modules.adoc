@@ -177,7 +177,7 @@ Modules work well for this.
 
 Other than content that is repeated on different pages (like the shopping cart mentioned above), pages also can have content that is repeated on the page itself.
 On a checkout page, the contents of the shopping cart could be summarized with the product name, the quantity and price for each product contained.
-Thanks to `Navigator` implementing `Iterable<Navigator>` a list of modules can be collected using Groovy's `collect()` and the `Navigator.module()` method.
+For this kind of page, a list of modules can be collected using the `moduleList()` methods of `Navigator`.
 
 Consider the following HTML for our cart contents:
 
@@ -200,14 +200,6 @@ And define a list of CartRows in our Page:
 include::{test-dir}/modules/RepeatingContentSpec.groovy[tag=page,indent=0]
 ----
 
-[TIP]
-====
-It's possible to make the creation of a list of modules from a `Navigator` even more concise by using the spread-dot operator (i.e. `$("table tr").tail()*.module(CartRow)`).
-Be careful though, because it won't do what you'd expect it to do if you use this technique together with the `module()` method that takes a module instance.
-Instead of creating multiple module instances like when spreading a `module()` call that takes a class it will take the single instance passed to it and initialize it multiple times returning a list
-which will contain the same module instance multiple times!
-====
-
 Because the return value of `cartItems` is a list of CartRow instances, we can use any of the usual collection methods:
 
 [source,groovy]
@@ -228,6 +220,14 @@ Keep in mind that you can use parametrized module instances to create lists of m
 ----
 include::{test-dir}/modules/RepeatingContentSpec.groovy[tag=parameterized_module,indent=0]
 ----
+
+[TIP]
+====
+You might be wondering why the `moduleList()` method flavour that allows the use parameterized module instances takes a closure instead of a module instance, which is what the `module()` method for
+creating parameterized modules does.
+If it took a single instance then it could only initialize it multiple times and return a list which would contain the same instance but many times!
+To be able to return a list of different instances it's needs a closure which acts as a factory of module instances.
+====
 
 == The content DSL
 
@@ -402,3 +402,61 @@ It can be used this way…
 ----
 include::{test-dir}/modules/RadioButtonsSnippetSpec.groovy[tag=example,indent=0]
 ----
+
+== Unwrapping modules returned from the `content` DSL
+
+For the sake of better error reporting, current implementation wraps any module declared within `content` block into
+`geb.content.TemplateDerivedPageContent` instance.
+
+Given a page defined as follows:
+
+[source,groovy]
+----
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=page,indent=0]
+----
+
+And a custom module:
+
+[source,groovy]
+----
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=module,indent=0]
+----
+
+A module assignment to a variable of its declared type will fail with `GroovyCastException`:
+
+[source,groovy]
+----
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=module_variable_fail,indent=0]
+----
+<1> `GroovyCastException` is thrown
+
+An invocation of a method which takes a module as argument with its declared type will fail with `MissingMethodException`:
+
+[source,groovy]
+----
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=module_argument_fail_method,indent=0]
+
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=module_argument_fail,indent=0]
+----
+<1> `MissingMethodException` is thrown
+
+As you may like or need to use strong typing for modules there is a way to do that. Module can be cast to its declared type with the Groovy `as` operator:
+
+[source,groovy]
+----
+include::{test-dir}/modules/UnwrappingModulesSnippetSpec.groovy[tag=module_cast,indent=0]
+----
+
+[NOTE]
+====
+Bear in mind that casting of a module to its declared type means the module gets unwrapped. By doing so the convenient error messages for such module are gone.
+====
+
+What's the trade-off? Calling `toString()` on any content element, including module, gives a meaningful path like:
+
+[source]
+----
+modules.ModuleUnwrappingPage -> theModule: modules.UnwrappedModule -> theContent: geb.navigator.NonEmptyNavigator
+----
+
+Such paths can be seen in error messages and this is exactly what you are going to give away for unwrapped modules.

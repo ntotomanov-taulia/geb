@@ -303,6 +303,10 @@ abstract class AbstractNavigator implements Navigator {
         getAttribute(name)
     }
 
+    WebElement singleElement() {
+        getElement(0)
+    }
+
     WebElement firstElement() {
         getElement(0)
     }
@@ -362,9 +366,25 @@ abstract class AbstractNavigator implements Navigator {
 
         module
     }
-/**
- * Iterator for looping over the context elements of a Navigator instance.
- */
+
+    @SuppressWarnings("UnnecessaryPublicModifier")
+    public <T extends Module> List<T> moduleList(Class<T> moduleClass) {
+        iterator()*.module(moduleClass)
+    }
+
+    @SuppressWarnings(["UnnecessaryPublicModifier", "UnnecessaryCollectCall"])
+    public <T extends Module> List<T> moduleList(Closure<T> moduleFactory) {
+        iterator().collect { it.module(moduleFactory.call()) }
+    }
+
+    @Override
+    String getStringRepresentation() {
+        getClass().name
+    }
+
+    /**
+     * Iterator for looping over the context elements of a Navigator instance.
+     */
     private class NavigatorIterator implements Iterator<Navigator> {
 
         private int index

@@ -17,7 +17,6 @@ package geb
 import geb.driver.RemoteDriverOperations
 import geb.error.NoNewWindowException
 import geb.error.PageChangeListenerAlreadyRegisteredException
-import geb.error.UndefinedAtCheckerException
 import geb.error.UnexpectedPageException
 import geb.js.JavascriptInterface
 import geb.navigator.factory.NavigatorFactory
@@ -498,6 +497,10 @@ class Browser {
         try {
             currentUrl = driver.currentUrl
         } catch (NullPointerException npe) {
+        } catch (WebDriverException webDriverException) {
+            if (!webDriverException.message.contains("Remote browser did not respond to getCurrentUrl")) {
+                throw webDriverException
+            }
         }
         if (currentUrl == newUrl) {
             driver.navigate().refresh()
@@ -562,12 +565,7 @@ class Browser {
      */
     public <T extends Page> T to(Map params, T page, Object[] args) {
         via(params, page, args)
-        try {
-            at(page)
-        } catch (UndefinedAtCheckerException e) {
-            // that's okay, we don't want to force users to define at checkers unless they explicitly use "at"
-            page
-        }
+        page.at ? at(page) : page
     }
 
     /**
@@ -640,7 +638,24 @@ class Browser {
     }
 
     /**
-     * Clears all cookies that the browser currently has.
+     * Clears cookies for the current domain and a number of additional domains by navigating the browser to each of to the urls passed as the argument to this method and clearing cookies for them.
+     *
+     * @param additionalUrls urls for which the cookies should be cleared in addition to the current domain
+     */
+    void clearCookies(String... additionalUrls) {
+        clearCookies()
+        additionalUrls.each {
+            go(it)
+            clearCookies()
+        }
+    }
+
+    /**
+     * Clears all cookies for the <b>current domain</b> that the browser has.
+     * <p>
+     * If the driven browser has accumulated cookies for additional domains that are to be cleared then {@link #clearCookies(java.lang.String[])} method should be used.
+     *
+     * @see org.openqa.selenium.WebDriver.Options#deleteAllCookies()
      */
     void clearCookies() {
         driver?.manage()?.deleteAllCookies()
@@ -979,12 +994,11 @@ class Browser {
 
     protected void verifyAtIfPresent(def targetPage) {
         if (targetPage) {
-            try {
+            if (targetPage.at) {
                 if (!at(targetPage)) {
                     throw new UnexpectedPageException(targetPage)
                 }
-            }
-            catch (UndefinedAtCheckerException e) {
+            } else {
                 page(targetPage)
             }
         }

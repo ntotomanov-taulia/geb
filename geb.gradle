@@ -30,8 +30,8 @@ allprojects { project ->
         isSnapshot = version.endsWith("-SNAPSHOT")
         isCi = project.hasProperty("ci")
 
-        seleniumVersion = "2.45.0"
-        groovyVersion = "2.4.3"
+        seleniumVersion = "2.52.0"
+        groovyVersion = "2.4.6"
         spockVersion = "1.0-groovy-2.4"
         junit4Version = "4.10"
 
@@ -61,12 +61,13 @@ allprojects { project ->
             ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4",
             ":module:geb-testng", ":module:geb-implicit-assertions",
             ":module:geb-ast", ":module:geb-waiting", ":module:geb-exceptions",
-            ":integration:geb-gradle", ":doc:site", ":doc:manual-snippets"
+            ":module:geb-test-common", ":integration:geb-gradle", ":doc:site",
+            ":doc:manual-snippets", ":compatibility:groovy-2.3.7"
         ]
 
         publishedModules = [
             ":module:geb-core", ":module:geb-implicit-assertions", ":module:geb-ast", ":module:geb-waiting", ":module:geb-exceptions",
-            ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4", ":module:geb-testng",
+            ":module:geb-spock", ":module:geb-junit3", ":module:geb-junit4", ":module:geb-testng", ":module:geb-test-common",
             ":doc:manual", ":integration:geb-gradle"
         ]
 
@@ -93,21 +94,12 @@ subprojects {
 
         dependencies {
             compile groovyDependency
-            codenarc 'org.codenarc:CodeNarc:0.22'
+            codenarc 'org.codenarc:CodeNarc:0.25.1', {
+                exclude module: "GMetrics"
+            }
         }
 
         sourceCompatibility = 1.7
-
-        tasks.withType(Test) {
-            reports.junitXml.destination = reporting.file("test-results/$name")
-            reports.html.destination = reporting.file("test-reports/$name")
-            binResultsDir = file("$buildDir/test-results-bin/$name")
-
-            ext.driver = project.properties["driver"] ?: "htmlunit"
-            systemProperty 'geb.dev.driver', driver
-
-            systemProperty 'geb.build.reportsDir', reporting.file("geb-reports/$name")
-        }
 
         codenarc.configFile = rootProject.file('gradle/codenarc/rulesets.groovy')
 
@@ -119,6 +111,17 @@ subprojects {
                     mustRunAfter codenarcSourceSetTask
                 }
             }
+        }
+
+        tasks.withType(Test) {
+            reports.junitXml.destination = reporting.file("test-results/$name")
+            reports.html.destination = reporting.file("test-reports/$name")
+            binResultsDir = file("$buildDir/test-results-bin/$name")
+
+            ext.driver = project.properties["driver"] ?: "htmlunit"
+            systemProperty 'geb.dev.driver', driver
+
+            systemProperty 'geb.build.reportsDir', reporting.file("geb-reports/$name")
         }
 
     }
@@ -139,7 +142,7 @@ subprojects {
         }
 
         gradle.taskGraph.whenReady { taskGraph ->
-            if (taskGraph.hasTask(uploadArchives)) {
+            if (taskGraph.hasTask(uploadArchives) && !isSnapshot) {
                 tasks.withType(JavaCompile) {
                     options.compilerArgs << "-Werror" << "-Xlint:options"
                 }
@@ -202,7 +205,6 @@ subprojects {
         uploadArchives { task ->
             repositories.mavenDeployer {
                 beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-                uniqueVersion = false
                 gradle.taskGraph.whenReady { taskGraph ->
                     if (taskGraph.hasTask(task)) {
                         repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
@@ -235,4 +237,8 @@ task release {
 
 task stage(type: Sync) {
     dependsOn 'doc:site:prepareDeployment'
+}
+
+wrapper {
+    gradleVersion = "2.13-rc-1"
 }

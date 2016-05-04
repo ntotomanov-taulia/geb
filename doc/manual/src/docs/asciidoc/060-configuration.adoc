@@ -11,7 +11,7 @@ There are three general mechanisms for influencing configuration; _system proper
 === The config script
 
 Geb attempts to load a `{config-slurper-api}` script named `GebConfig.groovy` from the _default package_ (in other words, in the root of a directory that is on the classpath).
-If it is not found, Geb will try to load a `{config-slurper-api}` class named `GebConfig` from the _default package_ - this is usefull if you run tests that use Geb from an IDE because you won't have
+If it is not found, Geb will try to load a `{config-slurper-api}` class named `GebConfig` from the _default package_ - this is useful if you run tests that use Geb from an IDE because you won't have
 to specify `GebConfig.groovy` as a resource, Geb will simply fall back to the compiled version of the script.
 If both script and class are not found Geb will continue using all defaults.
 
@@ -24,7 +24,7 @@ using the class loader that loaded Geb.
 [NOTE]
 ====
 In a Grails project, the `test/functional` directory is a good place to put your config script in.
-If you are using a build tool such as http://gradle.org/[Gradle] or http://maven.apache.org/[Maven] that has the concept of test “resources”, then that directory is a suitable place.
+If you are using a build tool such as link:http://gradle.org/[Gradle] or link:http://maven.apache.org/[Maven] that has the concept of test “resources”, then that directory is a suitable place.
 You can also put your script together with your compilation source and then the compiled version of the script will be used.
 ====
 
@@ -313,11 +313,6 @@ This might be useful as a way to speed up large test suites.
 ----
 include::{test-dir}/configuration/ReportOnTestFailuresConfigSpec.groovy[tag=config,indent=0]
 ----
-
-[WARNING]
-====
-Currently this flag is only supported by the TestNG adapter. Support for JUnit, Spock and other frameworks is forthcoming.
-====
 
 === Reporting listener
 

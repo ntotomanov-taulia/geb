@@ -17,13 +17,14 @@ package geb.navigator
 
 import geb.Browser
 import geb.Page
+import geb.error.SingleElementNavigatorOnlyMethodException
 import geb.error.UnableToSetElementException
-import geb.error.UndefinedAtCheckerException
 import geb.error.UnexpectedPageException
 import geb.textmatching.TextMatcher
 import geb.waiting.Wait
 import org.openqa.selenium.By
 import org.openqa.selenium.NoSuchElementException
+import org.openqa.selenium.StaleElementReferenceException
 import org.openqa.selenium.WebElement
 
 import java.util.regex.Pattern
@@ -103,6 +104,12 @@ class NonEmptyNavigator extends AbstractNavigator {
     @Override
     Navigator getAt(Collection indexes) {
         navigatorFor getElements(indexes)
+    }
+
+    @Override
+    WebElement singleElement() {
+        ensureContainsSingleElement("singleElement")
+        super.singleElement()
     }
 
     @Override
@@ -346,23 +353,33 @@ class NonEmptyNavigator extends AbstractNavigator {
         siblings().filter(attributes, selector)
     }
 
+    protected void ensureContainsSingleElement(String name, Class<?>... parameterTypes) {
+        if (contextElements.size() > 1) {
+            throw new SingleElementNavigatorOnlyMethodException(Navigator.getMethod(name, parameterTypes), contextElements.size())
+        }
+    }
+
     @Override
     boolean hasClass(String valueToContain) {
-        any { valueToContain in it.classes() }
+        ensureContainsSingleElement("hasClass", String)
+        valueToContain in classes()
     }
 
     @Override
     boolean is(String tag) {
-        contextElements.any { tag.equalsIgnoreCase(it.tagName) }
+        ensureContainsSingleElement("is", String)
+        tag.equalsIgnoreCase(firstElement().tagName)
     }
 
     @Override
     boolean isDisplayed() {
-        firstElement()?.displayed ?: false
+        ensureContainsSingleElement("isDisplayed")
+        firstElement().displayed
     }
 
     @Override
     boolean isDisabled() {
+        ensureContainsSingleElement("isDisabled")
         ensureTagIn(['button', 'input', 'option', 'select', 'textarea'], 'disabled')
 
         def value = getAttribute("disabled")
@@ -372,11 +389,13 @@ class NonEmptyNavigator extends AbstractNavigator {
 
     @Override
     boolean isEnabled() {
+        ensureContainsSingleElement("isEnabled")
         !disabled
     }
 
     @Override
     boolean isReadOnly() {
+        ensureContainsSingleElement("isReadOnly")
         ensureTagIn(['input', 'textarea'], 'readonly')
 
         def value = getAttribute("readonly")
@@ -385,21 +404,25 @@ class NonEmptyNavigator extends AbstractNavigator {
 
     @Override
     boolean isEditable() {
+        ensureContainsSingleElement("isEditable")
         !readOnly
     }
 
     @Override
     String tag() {
+        ensureContainsSingleElement("tag")
         firstElement().tagName
     }
 
     @Override
     String text() {
+        ensureContainsSingleElement("text")
         firstElement().text
     }
 
     @Override
     String getAttribute(String name) {
+        ensureContainsSingleElement("getAttribute", String)
         def attribute = firstElement().getAttribute(name)
         if (attribute == 'false' && name in BOOLEAN_ATTRIBUTES) {
             attribute = null
@@ -410,11 +433,13 @@ class NonEmptyNavigator extends AbstractNavigator {
 
     @Override
     List<String> classes() {
+        ensureContainsSingleElement("classes")
         contextElements.head().getAttribute("class")?.tokenize()?.unique()?.sort() ?: EMPTY_LIST
     }
 
     @Override
     def value() {
+        ensureContainsSingleElement("value")
         getInputValue(contextElements.head())
     }
 
@@ -434,6 +459,7 @@ class NonEmptyNavigator extends AbstractNavigator {
 
     @Override
     Navigator click() {
+        ensureContainsSingleElement("click")
         contextElements.first().click()
         this
     }
@@ -451,11 +477,13 @@ class NonEmptyNavigator extends AbstractNavigator {
         def assertionError = null
         def throwable = null
         try {
-            at = wait ? wait.waitFor { browser.verifyAt() } : browser.verifyAt()
+            if (pageInstance.at) {
+                at = wait ? wait.waitFor { browser.verifyAt() } : browser.verifyAt()
+            } else {
+                at = true
+            }
         } catch (AssertionError e) {
             assertionError = e
-        } catch (UndefinedAtCheckerException e) {
-            at = true
         } catch (Throwable e) {
             throwable = e
             throw e
@@ -514,6 +542,30 @@ class NonEmptyNavigator extends AbstractNavigator {
     }
 
     @Override
+    int getHeight() {
+        ensureContainsSingleElement("getHeight")
+        super.getHeight()
+    }
+
+    @Override
+    int getWidth() {
+        ensureContainsSingleElement("getWidth")
+        super.getWidth()
+    }
+
+    @Override
+    int getX() {
+        ensureContainsSingleElement("getX")
+        super.getX()
+    }
+
+    @Override
+    int getY() {
+        ensureContainsSingleElement("getY")
+        super.getY()
+    }
+
+    @Override
     Navigator unique() {
         new NonEmptyNavigator(browser, contextElements.unique(false))
     }
@@ -521,6 +573,18 @@ class NonEmptyNavigator extends AbstractNavigator {
     @Override
     String toString() {
         contextElements*.toString()
+    }
+
+    @Override
+    String css(String propertyName) {
+        ensureContainsSingleElement("css", String)
+        super.css(propertyName)
+    }
+
+    @Override
+    boolean isFocused() {
+        ensureContainsSingleElement("isFocused")
+        firstElement() == browser.driver.switchTo().activeElement()
     }
 
     def methodMissing(String name, arguments) {
@@ -636,37 +700,54 @@ class NonEmptyNavigator extends AbstractNavigator {
     }
 
     protected void setInputValues(Collection<WebElement> inputs, value) {
-        def unsupportedElements = inputs*.tagName*.toLowerCase() - ELEMENTS_WITH_MUTABLE_VALUE
+        def inputsToTagNames = inputs.collectEntries { [it, it.tagName.toLowerCase()] }
+        def unsupportedElements = inputsToTagNames.values().toList() - ELEMENTS_WITH_MUTABLE_VALUE
 
         if (unsupportedElements) {
             throw new UnableToSetElementException(*unsupportedElements)
         }
 
-        inputs.each { WebElement input ->
-            setInputValue(input, value)
+        inputsToTagNames.inject(false) { boolean valueSet, WebElement input, String tagName ->
+            setInputValue(input, tagName, value, valueSet) || valueSet
         }
     }
 
-    protected void setInputValue(WebElement input, value) {
-        if (input.tagName == "select") {
-            setSelectValue(input, value)
-        } else if (input.getAttribute("type") == "checkbox") {
-            if (getValue(input) == value.toString() || value == true) {
-                if (!input.isSelected()) {
+    protected boolean setInputValue(WebElement input, String tagName, value, boolean suppressStaleElementException) {
+        boolean valueSet = false
+        try {
+            def type = input.getAttribute("type")
+            if (tagName == "select") {
+                setSelectValue(input, value)
+                valueSet = true
+            } else if (type == "checkbox") {
+                if (getValue(input) == value.toString() || value == true) {
+                    if (!input.isSelected()) {
+                        input.click()
+                        valueSet = true
+                    }
+                } else if (input.isSelected()) {
                     input.click()
+                    valueSet = true
                 }
-            } else if (input.isSelected()) {
-                input.click()
+            } else if (type == "radio") {
+                if (getValue(input) == value.toString() || labelFor(input) == value.toString()) {
+                    input.click()
+                    valueSet = true
+                }
+            } else if (type == "file") {
+                input.sendKeys value as String
+                valueSet = true
+            } else {
+                input.clear()
+                input.sendKeys value as String
+                valueSet = true
             }
-        } else if (input.getAttribute("type") == "radio") {
-            if (getValue(input) == value.toString() || labelFor(input) == value.toString()) {
-                input.click()
+        } catch (StaleElementReferenceException e) {
+            if (!suppressStaleElementException) {
+                throw e
             }
-        } else if (input.getAttribute("type") == "file") {
-            input.sendKeys value as String
-        } else {
-            input.clear()
-            input.sendKeys value as String
+        } finally {
+            valueSet
         }
     }
 
@@ -821,14 +902,13 @@ class NonEmptyNavigator extends AbstractNavigator {
 
     @Override
     int hashCode() {
-        return contextElements.hashCode()
+        contextElements.hashCode()
     }
 
     @Override
     boolean equals(Object obj) {
         if (obj instanceof NonEmptyNavigator) {
-            return contextElements.equals(obj.contextElements)
+            contextElements == obj.contextElements
         }
-        return false
     }
 }

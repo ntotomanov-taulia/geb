@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package geb.navigator
+package geb
 
 import geb.test.GebSpecWithCallbackServer
-import org.openqa.selenium.WebElement
+import spock.lang.Issue
 
-class NonCrossBrowserNavigatorSpec extends GebSpecWithCallbackServer {
+class NavigatorCompatibilitySpec extends GebSpecWithCallbackServer {
+    def setupSpec() {
+        responseHtml {
+            body {
+                input(type: "text", id: "my-input", value: "val")
+            }
+        }
+    }
 
-    def "click is called only on the first element of the navigator"() {
-        given:
-        def element1 = Mock(WebElement)
-        def element2 = Mock(WebElement)
-        def navigator = new NonEmptyNavigator(browser, [element1, element2])
+    def setup() {
+        go()
+    }
 
+    @Issue("https://github.com/geb/issues/issues/422")
+    def 'can set form input field value with Groovy 2.3.7'() {
         when:
-        navigator.click()
+        $('#my-input').value('newValue')
 
         then:
-        1 * element1.click()
-        0 * element2.click()
-        0 * _
+        $('#my-input').value() == 'newValue'
     }
 }

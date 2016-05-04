@@ -47,26 +47,30 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         callbackAndWebDriverServer
     }
 
+    void html(Closure htmlMarkup) {
+        callbackAndWebDriverServer.responseHtml(htmlMarkup)
+        go()
+        driver.clearRecordedCommands()
+    }
+
     void "going to a page and getting its title"() {
         given:
-        callbackAndWebDriverServer.responseHtml {
+        html {
             head {
                 title "a title"
             }
         }
 
         when:
-        go()
         title
 
         then:
-        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
         driver.getTitleExecuted()
     }
 
     void "using a selector that returns multiple elements"() {
         given:
-        callbackAndWebDriverServer.responseHtml {
+        html {
             body {
                 p "first"
                 p "second"
@@ -74,28 +78,25 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         }
 
         when:
-        go()
         $("p")
 
         then:
-        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
         driver.findElementsByCssExecuted("p")
     }
 
     void "using form control shortcuts in a baseless module should not generate multiple root element searches"() {
         given:
-        callbackAndWebDriverServer.responseHtml {
+        html {
             body {
                 input type: "text", name: "someName"
             }
         }
+        page WebDriverCommandSpecModulePage
 
         when:
-        to WebDriverCommandSpecModulePage
         def module = plainModule
 
         then:
-        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
         driver.findRootElementExecuted()
         driver.resetExpectations()
 
@@ -108,42 +109,38 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
 
     void "attribute map passed to find method is translated into a css selector"() {
         given:
-        callbackAndWebDriverServer.responseHtml {
+        html {
             body {
                 input type: "text", name: "someName"
             }
         }
 
         when:
-        go()
         def input = $(type: "text", name: "someName")
 
         then:
         input
 
         and:
-        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
         driver.findElementsByCssExecuted("""[type="text"][name="someName"]""")
     }
 
     @Unroll("passing #attributes to find results in a findElements command using #using")
     void "passing a single attribute map to find should be translated to a specific By selector usage where possible"() {
         given:
-        callbackAndWebDriverServer.responseHtml {
+        html {
             body {
                 input id: "foo", class: "bar", name: "fizz"
             }
         }
 
         when:
-        go()
         def input = $(attributes)
 
         then:
         input
 
         and:
-        driver.getUrlExecuted(callbackAndWebDriverServer.applicationUrl)
         driver.ensureExecuted("findElements", using: using, value: selector)
 
         where:
@@ -151,6 +148,26 @@ class WebDriverCommandsSpec extends GebSpecWithServer {
         [id: "foo"]    | "id"         | "foo"
         [class: "bar"] | "class name" | "bar"
         [name: "fizz"] | "name"       | "fizz"
+    }
+
+    void "setting text input value"() {
+        given:
+        html {
+            body {
+                input type: "text"
+            }
+        }
+        def input = $("input")
+        driver.clearRecordedCommands()
+
+        when:
+        input.value("foo")
+
+        then:
+        driver.getElementTagNameExecuted()
+        driver.getElementAttributeExecuted("type")
+        driver.clearElementExecuted()
+        driver.sendKeysExecuted()
     }
 }
 

@@ -6,6 +6,9 @@ ruleset {
         EmptyCatchBlock {
             enabled = false
         }
+        EmptyClass {
+            doNotApplyToFileNames = 'GebTest.groovy, GebReportingTest.groovy'
+        }
     }
     ruleset('rulesets/braces.xml')
     ruleset('rulesets/convention.xml') {
@@ -13,6 +16,9 @@ ruleset {
             enabled = false
         }
         NoDef {
+            enabled = false
+        }
+        TrailingComma {
             enabled = false
         }
     }
@@ -91,6 +97,9 @@ ruleset {
             enabled = false
         }
         FactoryMethodName {
+            enabled = false
+        }
+        ClassNameSameAsSuperclass {
             enabled = false
         }
     }

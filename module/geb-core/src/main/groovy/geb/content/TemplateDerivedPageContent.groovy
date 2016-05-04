@@ -14,45 +14,38 @@
  */
 package geb.content
 
-import geb.*
+import geb.Browser
 import geb.error.RequiredPageContentNotPresent
 import geb.navigator.Navigator
 import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
 
 @SuppressWarnings("FieldName")
-abstract class TemplateDerivedPageContent implements Navigator {
+@SuppressWarnings("EqualsAndHashCode")
+class TemplateDerivedPageContent implements Navigator {
 
     private PageContentTemplate _template
     private Object[] _args
+    private Browser _browser
+    private StringRepresentationProvider _stringRepresentationProvider
 
     @Delegate
     protected Navigator _navigator
 
-    /**
-     * Called by the template when created (i.e. is not public).
-     *
-     * We don't use a constructor to prevent users from having to implement them.
-     */
-    void init(PageContentTemplate template, Navigator navigator, Object[] args) {
+    TemplateDerivedPageContent(Browser browser, PageContentTemplate template, Navigator navigator, Object[] args) {
+        this._browser = browser
         this._template = template
         this._navigator = navigator
         this._args = args
+        this._stringRepresentationProvider = new TemplateDerivedContentStringRepresentationProvider(template, args, navigator)
     }
 
     String toString() {
-        "${_template.name} - ${this.class.simpleName} (owner: ${_template.owner}, args: $_args, value: ${_navigator.value()})"
-    }
-
-    /**
-     * The page that this content is part of
-     */
-    Page getPage() {
-        _template.page
+        _stringRepresentationProvider.stringRepresentation
     }
 
     Browser getBrowser() {
-        getPage().browser
+        _browser
     }
 
     WebDriver getDriver() {
@@ -68,42 +61,6 @@ abstract class TemplateDerivedPageContent implements Navigator {
             throw new RequiredPageContentNotPresent(this)
         }
         this
-    }
-
-    /**
-     * Returns the height of the first element the navigator matches or 0 if it matches nothing.
-     * <p>
-     * To get the height of all matched elements you can use the spread operator {@code navigator*.height}
-     */
-    int getHeight() {
-        firstElement()?.size?.height ?: 0
-    }
-
-    /**
-     * Returns the width of the first element the navigator matches or 0 if it matches nothing.
-     * <p>
-     * To get the width of all matched elements you can use the spread operator {@code navigator*.width}
-     */
-    int getWidth() {
-        firstElement()?.size?.width ?: 0
-    }
-
-    /**
-     * Returns the x coordinate (from the top left corner) of the first element the navigator matches or 0 if it matches nothing.
-     * <p>
-     * To get the x coordinate of all matched elements you can use the spread operator {@code navigator*.x}
-     */
-    int getX() {
-        firstElement()?.location?.x ?: 0
-    }
-
-    /**
-     * Returns the y coordinate (from the top left corner) of the first element the navigator matches or 0 if it matches nothing.
-     * <p>
-     * To get the y coordinate of all matched elements you can use the spread operator {@code navigator*.y}
-     */
-    int getY() {
-        firstElement()?.location?.y ?: 0
     }
 
     Navigator click() {
@@ -212,14 +169,32 @@ abstract class TemplateDerivedPageContent implements Navigator {
     }
 
     @Override
-    //necessary because @Delegate generates wrong method signature for this method
-    <T extends Module> T module(Class<T> moduleClass) {
-        _navigator.module(moduleClass)
+    boolean isFocused() {
+        _navigator.focused
     }
 
     @Override
-    //necessary because @Delegate generates wrong method signature for this method
-    <T extends Module> T module(T module) {
-        _navigator.module(module)
+    boolean equals(Object o) {
+        if (o instanceof TemplateDerivedPageContent) {
+            _navigator == o._navigator
+        } else {
+            def values = iterator()*.value().findAll { it != null }
+            def value
+            switch (values.size()) {
+                case 0:
+                    value = null
+                    break
+                case 1:
+                    value = values.first()
+                    break
+                default:
+                    value = values
+            }
+            value == o
+        }
+    }
+
+    Object asType(Class type) {
+        _navigator.class in type ? _navigator : super.asType(type)
     }
 }

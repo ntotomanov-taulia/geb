@@ -14,7 +14,7 @@
  */
 package geb
 
-import geb.content.SimplePageContent
+import geb.content.TemplateDerivedPageContent
 import geb.error.*
 import geb.test.GebSpecWithCallbackServer
 import spock.lang.Issue
@@ -27,19 +27,19 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
             def path = req.requestURI == "/b" ? "b" : "a"
             def other = path == "b" ? "a" : "b"
             res.outputStream << """
-			<html>
-				<head>
-					<script type="text/javascript" charset="utf-8">
-					setTimeout(function() {
-						document.body.innerHTML += '<div id="dynamic">dynamic</div>';
-					}, 500);
-					</script>
-				</head>
-				<body>
-					<a href="/$other" id="$path">$other</a>
-					<div id="uri">$req.requestURI</div>
-				</body>
-			</html>"""
+            <html>
+                <head>
+                    <script type="text/javascript" charset="utf-8">
+                    setTimeout(function() {
+                        document.body.innerHTML += '<div id="dynamic">dynamic</div>';
+                    }, 500);
+                    </script>
+                </head>
+                <body>
+                    <a href="/$other" id="$path">$other</a>
+                    <div id="uri">$req.requestURI</div>
+                </body>
+            </html>"""
         }
     }
 
@@ -137,7 +137,7 @@ class PageOrientedSpec extends GebSpecWithCallbackServer {
         then:
         notThrown(Exception)
         !content
-        content in SimplePageContent
+        content in TemplateDerivedPageContent
     }
 
     def "error when explicitly requiring a component that is not present"() {

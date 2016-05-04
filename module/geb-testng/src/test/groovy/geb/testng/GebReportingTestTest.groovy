@@ -35,12 +35,12 @@ class GebReportingTestTest extends GebReportingTest {
     private methodNumberOfInitTest = 0
 
     static responseText = """
-		<html>
-		<body>
-			<div class="d1" id="d1">d1</div>
-		</body>
-		</html>
-	"""
+        <html>
+        <body>
+            <div class="d1" id="d1">d1</div>
+        </body>
+        </html>
+    """
 
     @BeforeClass
     void setUpClass() {
@@ -61,46 +61,46 @@ class GebReportingTestTest extends GebReportingTest {
         go()
     }
 
-    @Test
+    @Test(groups = ["GebReportingTestTest"])
     void reportingTestShouldReportOnDemand(Method testMethod) {
         report("ondemand")
         doTestReport(testMethod.name, "ondemand")
     }
 
-    @Test
+    @Test(groups = ["GebReportingTestTest"])
     void reportingTestShouldReportAfterMethodInit() {
         // initialization method that created in order to assert report creation in next method
         methodNumberOfInitTest = methodNumber
     }
 
-    @Test(dependsOnMethods = ["reportingTestShouldReportAfterMethodInit"])
+    @Test(dependsOnMethods = ["reportingTestShouldReportAfterMethodInit"], groups = ["GebReportingTestTest"])
     void reportingTestShouldReportAfterMethod() {
         // check previous method reporting (reportingTestShouldReportAfterMethodInit)
         report("ondemand")
-        doTestReport("reportingTestShouldReportAfterMethodInit", GebReportingTest.END_OF_METHOD_REPORT_LABEL, methodNumberOfInitTest, 1)
+        doTestReport("reportingTestShouldReportAfterMethodInit", END_OF_METHOD_REPORT_LABEL, methodNumberOfInitTest, 1)
         methodNumberOfInitTest = methodNumber
     }
 
-    @Test(dependsOnMethods = ["reportingTestShouldReportAfterMethod"])
+    @Test(dependsOnMethods = ["reportingTestShouldReportAfterMethod"], groups = ["GebReportingTestTest"])
     void reportingTestShouldReportAfterMethodAndOnDemand() {
         // check previous method reporting (reportingTestShouldReportAfterMethod)
         doTestReport("reportingTestShouldReportAfterMethod", "ondemand", methodNumberOfInitTest, 1)
-        doTestReport("reportingTestShouldReportAfterMethod", GebReportingTest.END_OF_METHOD_REPORT_LABEL, methodNumberOfInitTest, 2)
+        doTestReport("reportingTestShouldReportAfterMethod", END_OF_METHOD_REPORT_LABEL, methodNumberOfInitTest, 2)
     }
 
-    @Test
+    @Test(groups = ["GebReportingTestTest"])
     void reportingTestShouldReportOnTestFailureOnlyIfThatStrategyIsEnabled(Method testMethod) {
         config.reportOnTestFailureOnly = true
         def testResult = new TestResult()
 
         testResult.status = ITestResult.SUCCESS
         super.reportingAfter testResult
-        def report = tryToFindReport(testMethod.name, GebReportingTest.END_OF_METHOD_REPORT_LABEL)
+        def report = tryToFindReport(testMethod.name, END_OF_METHOD_REPORT_LABEL)
         assert report == null
 
         testResult.status = ITestResult.FAILURE
         super.reportingAfter testResult
-        doTestReport(testMethod.name, GebReportingTest.END_OF_METHOD_REPORT_LABEL)
+        doTestReport(testMethod.name, END_OF_METHOD_REPORT_LABEL)
     }
 
     def doTestReport(methodName = "", label = "", methodNumber = this.methodNumber, reportCounter = reportNumberInTest) {

@@ -48,7 +48,7 @@ class LinkCrawlSpec extends Specification {
                 def path = link.uri.path
                 if (path.startsWith("/manual") && !path.startsWith("/manual/snapshot")) {
                     false
-                } else if (path.endsWith("api/index-all.html") || path.endsWith("api/help-doc.html") || path.endsWith("package-summary.html")) {
+                } else if (path.endsWith("api/index-all.html") || path.endsWith("api/help-doc.html") || path.endsWith("package-summary.html") || path.endsWith("deprecated-list.html")) {
                     false
                 } else {
                     super.isCrawlable(link)
@@ -58,6 +58,16 @@ class LinkCrawlSpec extends Specification {
             List<String> findPageLinks(Response response) {
                 def document = response.document
                 document == null ? [] : document.select("body a")*.attr("href").findAll { it }
+            }
+
+            @Override
+            void addPageErrors(Link link, Response response) {
+                if (isCrawlable(link)) {
+                    response.document?.text()?.findAll(~/(link:[^\s]+)|(\{[a-z\-]+\})/)?.each {
+                        link.errors << new BadLinkSyntax(it)
+                    }
+                }
+                super.addPageErrors(link, response)
             }
         }
 
@@ -78,16 +88,16 @@ class LinkCrawlSpec extends Specification {
         aut.stop()
     }
 
-    private static class BadMarkdownLinkSyntax {
+    private static class BadLinkSyntax {
         final String link
 
-        BadMarkdownLinkSyntax(String link) {
+        BadLinkSyntax(String link) {
             this.link = link
         }
 
         @Override
         String toString() {
-            "Bad markdown link: $link"
+            "Bad link: $link"
         }
     }
 }

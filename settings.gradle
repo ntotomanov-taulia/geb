@@ -7,12 +7,14 @@ include "module:geb-core",
     "module:geb-ast",
     "module:geb-waiting",
     "module:geb-exceptions",
+    "module:geb-test-common",
     "internal:test-support",
     "integration:geb-grails",
     "integration:geb-gradle",
     "doc:manual",
     "doc:manual-snippets",
-    "doc:site"
+    "doc:site",
+    "compatibility:groovy-2.3.7"
 
 rootProject.name = 'geb'
 

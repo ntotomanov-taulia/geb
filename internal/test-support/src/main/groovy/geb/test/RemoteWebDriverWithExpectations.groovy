@@ -26,14 +26,18 @@ class RemoteWebDriverWithExpectations extends RemoteWebDriver {
 
     private List<Command> executedCommands = []
 
+    void clearRecordedCommands() {
+        executedCommands = []
+    }
+
     void resetExpectations() {
         try {
-            def unexpected = executedCommands.find { !it.matched }
+            def unexpected = executedCommands.findAll { !it.matched }
             if (unexpected) {
-                throw new UnexpectedCommandException(unexpected)
+                throw new UnexpectedCommandException(*unexpected)
             }
         } finally {
-            executedCommands = []
+            clearRecordedCommands()
         }
     }
 
@@ -52,21 +56,12 @@ class RemoteWebDriverWithExpectations extends RemoteWebDriver {
         super.execute(command, parameters)
     }
 
-    void getCurrentUrlExecuted() {
-        ensureExecuted('getCurrentUrl')
-    }
-
-    void getUrlExecuted(String url) {
-        getCurrentUrlExecuted()
-        ensureExecuted('get', url: url)
-    }
-
     void getTitleExecuted() {
         ensureExecuted('getTitle')
     }
 
-    void findByTagNameExecuted(String tagName) {
-        ensureExecuted('findElement', using: 'tag name', value: tagName)
+    void findByXPathExecuted(String expression) {
+        ensureExecuted('findElement', using: 'xpath', value: expression)
     }
 
     void findChildElementsByNameExecuted(String name) {
@@ -74,11 +69,27 @@ class RemoteWebDriverWithExpectations extends RemoteWebDriver {
     }
 
     void findRootElementExecuted() {
-        findByTagNameExecuted('html')
+        findByXPathExecuted('/*')
     }
 
     void findElementsByCssExecuted(String selector) {
         ensureExecuted('findElements', using: 'css selector', value: selector)
+    }
+
+    void getElementTagNameExecuted() {
+        ensureExecuted('getElementTagName')
+    }
+
+    void getElementAttributeExecuted(String name) {
+        ensureExecuted('getElementAttribute', name: name)
+    }
+
+    void clearElementExecuted() {
+        ensureExecuted('clearElement')
+    }
+
+    void sendKeysExecuted() {
+        ensureExecuted('sendKeysToElement')
     }
 
     private static class Command {
@@ -103,8 +114,8 @@ class RemoteWebDriverWithExpectations extends RemoteWebDriver {
 
     private static class UnexpectedCommandException extends Exception {
 
-        UnexpectedCommandException(Command unexpectedCommand) {
-            super("An unexpected command has been issued: $unexpectedCommand")
+        UnexpectedCommandException(Command... unexpectedCommands) {
+            super("An unexpected command has been issued:\n${unexpectedCommands.join("\n")}")
         }
     }
 
